@@ -1,5 +1,5 @@
 
-import Vec from 'Vector'
+import Vec from 'Vec2';
 export default class Square {
 
   constructor(x, y, size, color) {

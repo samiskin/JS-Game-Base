@@ -6,9 +6,12 @@ require('./styles/Screen.scss');
 import Square from 'js/Square';
 import Bone from 'js/Bone';
 import Arm from 'js/Arm';
-import Vec from 'Vector';
+import Vec2 from 'Vec2';
+import Vec3 from 'Vec3';
+import Mat from 'Mat';
 
 var framerate = 5;
+
 
 export default class Screen extends Component {
 
@@ -43,8 +46,16 @@ export default class Screen extends Component {
 
     this.arm = new Arm(100, 100);
     this.arm.draw(this.ctx);
-    this.arm.target = new Vec(400, 400);
+    this.arm.target = new Vec2(400, 400);
     this.square = new Square(390, 390, 20, 20, "rgb(200, 0, 0)");
+
+    var vec = new Vec2(2, 5, 5);
+
+    var mat = new Mat([
+        [3, 0, 2],
+        [2, 0, -2],
+        [0, 1, 1]
+      ]);
 
     setTimeout(this.tick.bind(this), 1000/framerate);
 
