@@ -8,12 +8,29 @@ import Mat from 'Mat';
 var torqueMultiplier = 0.0001;
 
 
+function clampAngle(rads) {
+  while (rads < 0)
+    rads += 2*Math.PI;
+  while (rads > 2 * Math.PI)
+    rads -= 2*Math.PI;
+  return rads;
+}
+
+function clampMag(vec, max) {
+  return vec.lengthSq() > max*max ? vec.resize(max) : vec;
+}
+
 export default class Arm {
 
   constructor(x, y) {
-    this.lengths  = [100, 75, 50, 50, 45, 30];
-    this.freedoms = [ 75, 50, 50, 50, 50, 50];
-    this.angles   = [ 20, 50, 20,  5,  5,  5];
+    this.lengths  = [400, 375, 250, 150];//, 75, 50, 50, 75, 50, 50, 75, 50, 50];
+    this.freedoms = [ 75, 50, 50, 50];//, 50, 50, 50, 50, 50, 50, 50, 50, 50];
+    this.angles   = [-45,  0,  0,  0];//,  0,  0,  0,  0,  0,  0,  0,  0,  0];
+
+    for (var i = 0; i < this.angles.length; i++) {
+      this.angles[i] = this.angles[i] * Math.PI / 180;
+      console.log(this.angles[i]);
+    }
     this.origin = new Vec2(x, y);
 
 
@@ -41,18 +58,24 @@ export default class Arm {
     return bones;
   }
 
-  computeJacobian(target = this.target) {
+  newJacobian(target = this.target) {
     var bones = this.genBones();
-    var e = bones[bones.length - 1].p2;
-    var threshold = 3;
-    if (target.subtract(e).length() < threshold) return;
+    var s = bones.map((bone) => {return bone.p2;} );
+    console.log(s);
+  }
 
-    var J = [[], [], []];//, [], [], []];
-    //target = target.subtract(this.origin);
+  computeJacobian(t = this.target) {
+    var bones = this.genBones();
+    var s = bones[bones.length - 1].p2;
+    var e = clampMag(t.subtract(s), 50);
+    var threshold = 9;
+    if (e.lengthSq() < threshold) return;
+
+    var J = [[], [], []];
     var p = this.origin;
-    var a = new Vec3(0, 0, 1);
+    var v = new Vec3(0, 0, 1);
     for (var bone = 0; bone < bones.length; bone++) {
-      var ji = a.cross(e.subtract(p));
+      var ji = v.cross(s.subtract(p));
       J[0].push(ji.x);
       J[1].push(ji.y);
       J[2].push(ji.z);
@@ -60,15 +83,21 @@ export default class Arm {
     }
     J = new Mat(J);
     var jInv;
-    //jInv = J.transpose().multiply(J.multiply(J.transpose()).inverse());
+
+
+
+   ///// var lambda = 1;
+    //jInv = J.transpose().multiply(J.multiply(J.transpose()).addIdentity(lambda * lambda).inverse()).multiply(e);
+//    jInv = J.transpose().multiply(J).inverse().multiply(J.transpose());
     jInv = J.transpose();
-    var scale = 0.001;
-    var dx = new Mat([target.subtract(e).scale(scale).arr()]).transpose();
-    var result = jInv.multiply(dx);
+    var matE = new Mat([e.arr()]).transpose();
+    var scale = 0.000001;
+    var result = jInv.scale(scale).multiply(matE);
     for (var i = 0; i < this.angles.length; i++) {
       this.angles[i] = this.angles[i] + result.values[i][0];
+//      if (this.angles[i] < -this.freedoms[i]) this.angles[i] = -this.freedoms[i];
+ //     if (this.angles[i] > this.freedoms[i]) this.angles[i] = this.freedoms[i];
     }
-    
   }
 
   tick() {

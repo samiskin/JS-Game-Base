@@ -20,6 +20,10 @@ export default class Bone {
     this.p2 = this.p2.subtract(this.p1).rotate(angle).add(this.p1);
   }
 
+  angle() {
+    return this.p2.subtract(this.p1).angle();
+  }
+
   moveTo(root) {
     console.log(root);
     var diff = this.p2.subtract(this.p1);

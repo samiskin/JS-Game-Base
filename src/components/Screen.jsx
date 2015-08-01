@@ -22,8 +22,8 @@ export default class Screen extends Component {
   }
 
   static defaultProps = {
-    width: 820,
-    height: 580
+    width: 1280,
+    height: 740
   }
 
   static stores = [
@@ -48,9 +48,15 @@ export default class Screen extends Component {
   componentDidMount() {
     this.canvas = React.findDOMNode(this.refs.canvas);
     this.ctx = this.canvas.getContext('2d');
+    this.running = true;
 
     this.canvas.addEventListener('mousemove', (evt) => {
       this.mouse = this.getMousePos(evt);
+    });
+
+    this.canvas.addEventListener("keypress", (evt) => {
+      if (e.keyCode == 87) this.running = false;
+      else if (e.keyCode == 83) this.running = true;
     });
 
     this.arm = new Arm(100, 100);
@@ -76,12 +82,12 @@ export default class Screen extends Component {
   }
 
   tick() {
-    this.arm.target = this.mouse;
-    console.log(this.mouse);
-    this.clear();
-    this.arm.tick();
- //   this.square.draw(this.ctx);
-    this.arm.draw(this.ctx);
+    if (this.running) {
+      this.arm.target = this.mouse;
+      this.clear();
+      this.arm.tick();
+      this.arm.draw(this.ctx);
+    }
     setTimeout(this.tick.bind(this), 1000/framerate);
   }
 
