@@ -18,13 +18,13 @@ export default class Mat {
   }
 
   scale(amount) {
-    var mat = this.clone();
+    var arr = arr2D(this.rows(), this.columns());
     for (var row = 0; row < this.rows(); row++) {
       for (var col = 0; col < this.columns(); col++) {
-        mat.values[row][col] = amount * this.values[row][col];
+        arr[row][col] = amount * this.values[row][col];
       }
     }
-    return mat;
+    return new Mat(arr);
   }
 
   multiply(other) {
@@ -45,7 +45,7 @@ export default class Mat {
   }
 
   transpose() {
-    if (this.matTranspose) return this.matTranspose.clone();
+    if (this.matTranspose) return this.matTranspose;
     var ret = arr2D(this.columns(), this.rows());
     for (var row = 0; row < this.values.length; row++) {
       for (var col = 0; col < this.values[row].length; col++) {
@@ -63,7 +63,7 @@ export default class Mat {
       return this.matDeterminant;
     }
     this.matDeterminant = this.findDet(this.values);
-    return this.determinant();
+    return this.matDeterminant;
   }
 
   findDet(arr) {
@@ -85,7 +85,7 @@ export default class Mat {
             }
           }
         }
-        sum += this.values[0][col] * this.findDet(subMat);
+        sum += 0;//this.values[0][col] * this.findDet(subMat);
       }
       return sum;
     }
@@ -117,17 +117,21 @@ export default class Mat {
   }
 
   cofactor(arr = this.values) {
+    if (arr == this.values && this.matCofactor) return this.matCofactor;
     var ret = this.minor(arr);
     for (var row = 0; row < ret.rows(); row++)
       for (var col = 0; col < ret.columns(); col++)
         ret.values[row][col] = ((row + col) % 2 == 0 ? 1 : -1) * ret.values[row][col];
+    if (this.arr == this.values) this.matCofactor = ret;
     return ret;
   }
 
   inverse() {
-    if (this.matInverse) return this.matInverse.clone();
-    this.matInverse = this.cofactor().transpose().scale(1 / this.determinant());
-    return this.inverse();
+    if (!this.matInverse) {
+      var det = this.determinant();
+      this.matInverse = this.cofactor().transpose().scale(1 / (det == 0 ?  0.0001 : det));
+    }
+    return this.matInverse;
   }
 
   rows() {
@@ -146,6 +150,13 @@ export default class Mat {
       }
       console.log(str + "|");
     }
+  }
+
+  addIdentity(amt) {
+    var mat = this.clone();
+    for (var i = 0; i < this.rows(); i++)
+      mat.values[i][i] += amt;
+    return mat;
   }
 
   

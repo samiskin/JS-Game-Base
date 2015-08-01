@@ -38,7 +38,7 @@ export default class Vec2 extends Vec3 {
 
   rotate(angle) {
     var {x, y} = this;
-    angle = toRadians(angle);
+  //  angle = toRadians(angle);
     var retX = x * cos(angle) - y * sin(angle);
     var retY = y * cos(angle) + x * sin(angle);
     return new Vec2(retX, retY);

@@ -29,11 +29,11 @@ export default class Vec3 {
   }
 
   normalize() {
-    return this.multiply(1/this.length());
+    return this.scale(1/this.length());
   }
 
   resize(size) {
-    return this.multiply(size / this.length());
+    return this.scale(size / this.length());
   }
 
   dot(other) {
