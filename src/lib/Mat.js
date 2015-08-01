@@ -45,20 +45,25 @@ export default class Mat {
   }
 
   transpose() {
+    if (this.matTranspose) return this.matTranspose.clone();
     var ret = arr2D(this.columns(), this.rows());
     for (var row = 0; row < this.values.length; row++) {
       for (var col = 0; col < this.values[row].length; col++) {
         ret[col][row] = this.values[row][col];
       }
     }
-    return new Mat(ret);
+    this.matTranspose = new Mat(ret);
+    return this.transpose();
   }
 
   determinant() {
     if(this.rows() != this.columns()) {
       throw "Must be a square matrix";
+    } else if (this.matDeterminant) {
+      return this.matDeterminant;
     }
-    return this.findDet(this.values);
+    this.matDeterminant = this.findDet(this.values);
+    return this.determinant();
   }
 
   findDet(arr) {
@@ -120,7 +125,9 @@ export default class Mat {
   }
 
   inverse() {
-    return this.cofactor().transpose().scale(1 / this.determinant());
+    if (this.matInverse) return this.matInverse.clone();
+    this.matInverse = this.cofactor().transpose().scale(1 / this.determinant());
+    return this.inverse();
   }
 
   rows() {

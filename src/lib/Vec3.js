@@ -24,7 +24,7 @@ export default class Vec3 {
     return new Vec3(this.x - other.x, this.y - other.y, this.z - other.z);
   }
 
-  multiply(scale) {
+  scale(scale) {
     return new Vec3(this.x * scale, this.y * scale, this.z * scale);
   }
 
@@ -43,6 +43,10 @@ export default class Vec3 {
   cross(other) {
     var z = other.z ? other.z : 0;
     return new Vec3(this.y*z - this.z*other.y, this.z*other.x - this.x*z, this.x*other.y - this.y*other.x);
+  }
+
+  arr() {
+    return [this.x, this.y, this.z];
   }
 
 }

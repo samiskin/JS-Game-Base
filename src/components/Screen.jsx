@@ -10,7 +10,7 @@ import Vec2 from 'Vec2';
 import Vec3 from 'Vec3';
 import Mat from 'Mat';
 
-var framerate = 5;
+var framerate = 60;
 
 
 export default class Screen extends Component {
@@ -40,14 +40,24 @@ export default class Screen extends Component {
   }
 
 
+  getMousePos(evt) {
+    var rect = this.canvas.getBoundingClientRect();
+    return new Vec2(evt.clientX - rect.left, evt.clientY - rect.top);
+  }
 
   componentDidMount() {
-    this.ctx = React.findDOMNode(this.refs.canvas).getContext('2d');
+    this.canvas = React.findDOMNode(this.refs.canvas);
+    this.ctx = this.canvas.getContext('2d');
+
+    this.canvas.addEventListener('mousemove', (evt) => {
+      this.mouse = this.getMousePos(evt);
+    });
 
     this.arm = new Arm(100, 100);
     this.arm.draw(this.ctx);
-    this.arm.target = new Vec2(400, 400);
-    this.square = new Square(390, 390, 20, 20, "rgb(200, 0, 0)");
+    var target = new Vec2(180, 180);
+    this.mouse = target;
+//    this.square = new Square(target.x, 20, 20, "rgb(200, 0, 0)");
 
     var vec = new Vec2(2, 5, 5);
 
@@ -57,14 +67,20 @@ export default class Screen extends Component {
         [0, 1, 1]
       ]);
 
+   // this.arm.tick();
+   // this.arm.draw(this.ctx);
+
+
     setTimeout(this.tick.bind(this), 1000/framerate);
 
   }
 
   tick() {
+    this.arm.target = this.mouse;
+    console.log(this.mouse);
     this.clear();
-    this.arm.tick(this.ctx);
-    this.square.draw(this.ctx);
+    this.arm.tick();
+ //   this.square.draw(this.ctx);
     this.arm.draw(this.ctx);
     setTimeout(this.tick.bind(this), 1000/framerate);
   }
