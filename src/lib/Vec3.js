@@ -4,10 +4,6 @@ export default class Vec3 {
     this.x = x; this.y = y; this.z = z;
   }
 
-  clone() {
-    return new Vec3(this.x, this.y, this.z);
-  }
-
   length() {
     return Math.sqrt(this.lengthSq());
   }
