@@ -25,7 +25,6 @@ export default class Bone {
   }
 
   moveTo(root) {
-    console.log(root);
     var diff = this.p2.subtract(this.p1);
     this.p1 = root.clone();
     this.p2 = this.p1.add(diff);

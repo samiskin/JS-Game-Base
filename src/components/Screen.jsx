@@ -22,7 +22,7 @@ export default class Screen extends Component {
   }
 
   static defaultProps = {
-    width: 1280,
+    width: 860,
     height: 740
   }
 

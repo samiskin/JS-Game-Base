@@ -20,16 +20,21 @@ function clampMag(vec, max) {
   return vec.lengthSq() > max*max ? vec.resize(max) : vec;
 }
 
+function clampVal(val, max, min) {
+  if (val > max) return max;
+  if (val < min) return min;
+  return val;
+}
+
 export default class Arm {
 
   constructor(x, y) {
-    this.lengths  = [400, 375, 250, 150];//, 75, 50, 50, 75, 50, 50, 75, 50, 50];
-    this.freedoms = [ 75, 50, 50, 50];//, 50, 50, 50, 50, 50, 50, 50, 50, 50];
-    this.angles   = [-45,  0,  0,  0];//,  0,  0,  0,  0,  0,  0,  0,  0,  0];
+    this.lengths  = [100, 75, 50, 50, 75, 50, 50, 75, 50, 50, 75, 50, 50];
+    this.freedoms = [ 75, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50];
+    this.angles   = [-45,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0];
 
     for (var i = 0; i < this.angles.length; i++) {
       this.angles[i] = this.angles[i] * Math.PI / 180;
-      console.log(this.angles[i]);
     }
     this.origin = new Vec2(x, y);
 
@@ -58,28 +63,26 @@ export default class Arm {
     return bones;
   }
 
-  newJacobian(target = this.target) {
-    var bones = this.genBones();
-    var s = bones.map((bone) => {return bone.p2;} );
-    console.log(s);
-  }
 
   computeJacobian(t = this.target) {
     var bones = this.genBones();
     var s = bones[bones.length - 1].p2;
     var e = clampMag(t.subtract(s), 50);
-    var threshold = 9;
+    var threshold = 25;
     if (e.lengthSq() < threshold) return;
 
     var J = [[], [], []];
     var p = this.origin;
     var v = new Vec3(0, 0, 1);
+    var diffs = [];
     for (var bone = 0; bone < bones.length; bone++) {
-      var ji = v.cross(s.subtract(p));
+      var diff = s.subtract(p);
+      var ji = v.cross(diff);
       J[0].push(ji.x);
       J[1].push(ji.y);
       J[2].push(ji.z);
       p = bones[bone].p2;
+      diffs.push(diff);
     }
     J = new Mat(J);
     var jInv;
@@ -91,10 +94,15 @@ export default class Arm {
 //    jInv = J.transpose().multiply(J).inverse().multiply(J.transpose());
     jInv = J.transpose();
     var matE = new Mat([e.arr()]).transpose();
-    var scale = 0.000001;
+    var scale = 0.00001;
     var result = jInv.scale(scale).multiply(matE);
     for (var i = 0; i < this.angles.length; i++) {
-      this.angles[i] = this.angles[i] + result.values[i][0];
+
+      var inc = result.values[i][0];
+      var ang = Math.abs(Math.asin(threshold * 4 / (Math.pow(diffs[i].lengthSq(), 1/1.75))));
+      if (i == 0)
+        console.log("WAT: ", ang, inc);
+      this.angles[i] = this.angles[i] + clampVal(inc, ang, -ang);
 //      if (this.angles[i] < -this.freedoms[i]) this.angles[i] = -this.freedoms[i];
  //     if (this.angles[i] > this.freedoms[i]) this.angles[i] = this.freedoms[i];
     }
