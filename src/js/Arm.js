@@ -5,7 +5,6 @@ import Vec2 from 'Vec2';
 import Vec3 from 'Vec3';
 import Mat from 'Mat';
 
-var torqueMultiplier = 0.0001;
 
 
 function clampAngle(rads) {
@@ -14,6 +13,13 @@ function clampAngle(rads) {
   while (rads > 2 * Math.PI)
     rads -= 2*Math.PI;
   return rads;
+}
+
+function getAngleDif(a1, a2) {
+  var ang = clampAngle(a1) - clampAngle(a2);
+  if (ang > Math.PI) ang -= 2*Math.PI;
+  if (ang < -Math.PI) ang += 2*Math.PI;
+  return ang;
 }
 
 function clampMag(vec, max) {
@@ -29,16 +35,13 @@ function clampVal(val, max, min) {
 export default class Arm {
 
   constructor(x, y) {
-    this.lengths  = [100, 75, 50, 50, 75, 50, 50, 75, 50, 50, 75, 50, 50];
-    this.freedoms = [ 75, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50];
-    this.angles   = [-45,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0];
+    this.lengths  = [100, 75, 50, 50];
+    this.angles   = [-45,  0,  0,  0];
 
     for (var i = 0; i < this.angles.length; i++) {
       this.angles[i] = this.angles[i] * Math.PI / 180;
     }
     this.origin = new Vec2(x, y);
-
-
   }
 
   draw(ctx) {
@@ -64,53 +67,33 @@ export default class Arm {
   }
 
 
-  computeJacobian(t = this.target) {
+  tick() {
+    var t = this.target;
     var bones = this.genBones();
     var s = bones[bones.length - 1].p2;
-    var e = clampMag(t.subtract(s), 50);
+    var e = clampMag(t.subtract(s), 150);
     var threshold = 25;
     if (e.lengthSq() < threshold) return;
 
     var J = [[], [], []];
     var p = this.origin;
     var v = new Vec3(0, 0, 1);
-    var diffs = [];
     for (var bone = 0; bone < bones.length; bone++) {
-      var diff = s.subtract(p);
-      var ji = v.cross(diff);
+      var ji = v.cross(s.subtract(p));
       J[0].push(ji.x);
       J[1].push(ji.y);
       J[2].push(ji.z);
       p = bones[bone].p2;
-      diffs.push(diff);
     }
-    J = new Mat(J);
-    var jInv;
 
-
-
-   ///// var lambda = 1;
-    //jInv = J.transpose().multiply(J.multiply(J.transpose()).addIdentity(lambda * lambda).inverse()).multiply(e);
-//    jInv = J.transpose().multiply(J).inverse().multiply(J.transpose());
-    jInv = J.transpose();
+    var jInv = (new Mat(J)).transpose();
     var matE = new Mat([e.arr()]).transpose();
     var scale = 0.00001;
     var result = jInv.scale(scale).multiply(matE);
-    for (var i = 0; i < this.angles.length; i++) {
-
-      var inc = result.values[i][0];
-      var ang = Math.abs(Math.asin(threshold * 4 / (Math.pow(diffs[i].lengthSq(), 1/1.75))));
-      if (i == 0)
-        console.log("WAT: ", ang, inc);
-      this.angles[i] = this.angles[i] + clampVal(inc, ang, -ang);
-//      if (this.angles[i] < -this.freedoms[i]) this.angles[i] = -this.freedoms[i];
- //     if (this.angles[i] > this.freedoms[i]) this.angles[i] = this.freedoms[i];
-    }
+    for (var i = 0; i < this.angles.length; i++)
+      this.angles[i] = clampAngle(this.angles[i] + result.values[i][0]);
   }
 
-  tick() {
-    this.computeJacobian();
-  }
 
   setTarget(x, y) {
     this.target = new Vec2(x, y);
