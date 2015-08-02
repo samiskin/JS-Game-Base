@@ -1,2 +1,2 @@
-# JS-Game-Base
-A starting point for making Javascript games, specifically for 1GAM.  Currently I'm just playing around with IK methods since I want to try to get all the animations done using bones so that my development has few keyframes and all animations are interpolations.
+# Inverse Kinematics Solver
+An implementation of Inverse Kinematics to get a 4 joint arm to try to touch the mouse cursor.  Both the Jacobian Transpose as well as the Cyclic Coordinate Descent methods have been used together to test them out.
