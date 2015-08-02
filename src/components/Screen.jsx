@@ -9,7 +9,7 @@ import Vec2 from 'Vec2';
 import Vec3 from 'Vec3';
 import Mat from 'Mat';
 
-var framerate = 60;
+var framerate = 60.0001;
 
 
 export default class Screen extends Component {
@@ -47,6 +47,9 @@ export default class Screen extends Component {
     var target = new Vec2(400, 200);
     this.mouse = target;
 
+    this.tick();
+    this.tick();
+    this.tick();
     setTimeout(this.tick.bind(this), 1000/framerate);
   }
 

@@ -8,11 +8,20 @@ import Mat from 'Mat';
 
 
 function clampAngle(rads) {
-  while (rads < 0)
+  rads = rads % (2 * Math.PI);
+  if (rads < -Math.PI)
     rads += 2*Math.PI;
-  while (rads > 2 * Math.PI)
+  else if (rads > Math.PI)
     rads -= 2*Math.PI;
   return rads;
+}
+
+function toRads(degs) {
+  return degs * Math.PI / 180;
+}
+
+function toDegs(rads) {
+  return rads * 180 / Math.PI;
 }
 
 function getAngleDif(a1, a2) {
@@ -39,7 +48,7 @@ export default class Arm {
     this.angles   = [-45,  0,  0,  0];
 
     for (var i = 0; i < this.angles.length; i++) {
-      this.angles[i] = this.angles[i] * Math.PI / 180;
+      this.angles[i] = toRads(this.angles[i]);
     }
     this.origin = new Vec2(x, y);
   }
@@ -59,15 +68,21 @@ export default class Arm {
 
     for (var i = 1; i < this.lengths.length; i++) {
       var start = bones[i - 1].p2;
+      var angle = 0;
+
+      for (var ang = i; ang >= 0; ang--){
+        angle += this.angles[ang];
+      }
+
       var vec = new Vec2(this.lengths[i], 0);
-        vec = vec.rotate(this.angles[i]).add(start);
+      vec = vec.rotate(angle).add(start);
       bones.push(new Bone(start.x, start.y, vec.x, vec.y));
     }
     return bones;
   }
 
 
-  tick() {
+  jacobianTranspose() {
     var t = this.target;
     var bones = this.genBones();
     var s = bones[bones.length - 1].p2;
@@ -92,6 +107,21 @@ export default class Arm {
     var result = jInv.scale(scale).multiply(matE);
     for (var i = 0; i < this.angles.length; i++)
       this.angles[i] = clampAngle(this.angles[i] + result.values[i][0]);
+  }
+
+  goToOrientation() {
+    var target = [45, 90, 50, 92];
+    for (var bone = 0; bone < this.lengths.length; bone++) {
+      var curr = toDegs(this.angles[bone]);
+      var dt = ((((target[bone] - curr) % 360) + 540) % 360) - 180;
+      if (Math.abs(dt) >= 1)
+        this.angles[bone] += clampAngle(toRads(dt)) * 0.01;
+    }
+  }
+
+  tick() {
+//  this.jacobianTranspose();
+    this.goToOrientation();
   }
 
 
