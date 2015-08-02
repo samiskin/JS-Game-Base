@@ -156,7 +156,7 @@ export default class Arm {
   }
 
   tick() {
-    //this.jacobianTranspose();
+    this.jacobianTranspose();
     this.goToOrientation(this.CCD());
   }
 
