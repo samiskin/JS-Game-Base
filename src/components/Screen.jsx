@@ -9,7 +9,7 @@ import Vec2 from 'Vec2';
 import Vec3 from 'Vec3';
 import Mat from 'Mat';
 
-var framerate = 60;
+var framerate = 60.0001;
 
 
 export default class Screen extends Component {
@@ -53,6 +53,12 @@ export default class Screen extends Component {
   tick() {
     this.ctx.clearRect(0, 0, this.props.width, this.props.height);
     this.arm.target = this.mouse;
+
+    this.ctx.beginPath();
+    this.ctx.arc(this.arm.target.x, this.arm.target.y, 2, 0, 2*Math.PI);
+    this.ctx.stroke();
+
+
     this.arm.tick();
     this.arm.draw(this.ctx);
     setTimeout(this.tick.bind(this), 1000/framerate);

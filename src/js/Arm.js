@@ -8,11 +8,20 @@ import Mat from 'Mat';
 
 
 function clampAngle(rads) {
-  while (rads < 0)
+  rads = rads % (2 * Math.PI);
+  if (rads < -Math.PI)
     rads += 2*Math.PI;
-  while (rads > 2 * Math.PI)
+  else if (rads > Math.PI)
     rads -= 2*Math.PI;
   return rads;
+}
+
+function toRads(degs) {
+  return degs * Math.PI / 180;
+}
+
+function toDegs(rads) {
+  return rads * 180 / Math.PI;
 }
 
 function getAngleDif(a1, a2) {
@@ -27,9 +36,14 @@ function clampMag(vec, max) {
 }
 
 function clampVal(val, max, min) {
-  if (val > max) return max;
-  if (val < min) return min;
-  return val;
+  return Math.max(min, Math.min(max, val));
+}
+
+function toDegArray(radArray) {
+  var ret = [];
+  for (var i = 0; i < radArray.length; i++)
+    ret.push(toDegs(radArray[i]));
+  return ret;
 }
 
 export default class Arm {
@@ -39,7 +53,7 @@ export default class Arm {
     this.angles   = [-45,  0,  0,  0];
 
     for (var i = 0; i < this.angles.length; i++) {
-      this.angles[i] = this.angles[i] * Math.PI / 180;
+      this.angles[i] = toRads(this.angles[i]);
     }
     this.origin = new Vec2(x, y);
   }
@@ -51,23 +65,29 @@ export default class Arm {
     }
   }
 
-  genBones() {
+  genBones(angles = this.angles) {
     var bones = [];
     var bone1 = new Vec2(this.lengths[0], 0);
-    bone1 = bone1.rotate(this.angles[0]).add(this.origin);
+    bone1 = bone1.rotate(angles[0]).add(this.origin);
     bones.push (new Bone(this.origin.x, this.origin.y, bone1.x, bone1.y));
 
-    for (var i = 1; i < this.lengths.length; i++) {
+    for (var i = 1; i < angles.length; i++) {
       var start = bones[i - 1].p2;
+      var angle = 0;
+
+      for (var ang = i; ang >= 0; ang--){
+        angle += angles[ang];
+      }
+
       var vec = new Vec2(this.lengths[i], 0);
-        vec = vec.rotate(this.angles[i]).add(start);
+      vec = vec.rotate(angle).add(start);
       bones.push(new Bone(start.x, start.y, vec.x, vec.y));
     }
     return bones;
   }
 
 
-  tick() {
+  jacobianTranspose() {
     var t = this.target;
     var bones = this.genBones();
     var s = bones[bones.length - 1].p2;
@@ -92,6 +112,52 @@ export default class Arm {
     var result = jInv.scale(scale).multiply(matE);
     for (var i = 0; i < this.angles.length; i++)
       this.angles[i] = clampAngle(this.angles[i] + result.values[i][0]);
+  }
+
+  goToOrientation(targetAngles = this.angles) {
+    for (var bone = 0; bone < this.lengths.length; bone++) {
+      var curr = toDegs(this.angles[bone]);
+      var dt = ((((toDegs(targetAngles[bone]) - curr) % 360) + 540) % 360) - 180;
+      if (Math.abs(dt) >= 1)
+        this.angles[bone] += clampAngle(toRads(dt)) * 0.1;
+    }
+  }
+
+  CCD() {
+    var target = this.target;
+    var epsilon = 0.0001;
+    var trivialArcLength = 0.00001;
+    var arrivalDistSq = 1;
+
+    var bones = this.genBones();
+    var end = bones[bones.length - 1].p2;
+    var bonesChanged = false;
+    var angles = this.angles.slice(0);
+    for (var boneId = bones.length - 1; boneId >= 0; boneId--) {
+      var curToEnd = end.subtract(bones[boneId].p1);
+      var curToTarget = target.subtract(bones[boneId].p1);
+
+      var cosRotAng = 1;
+      var sinRotAng = 0;
+      var endTargetMag = curToEnd.length() * curToTarget.length();
+      if (endTargetMag > epsilon) {
+        cosRotAng = curToEnd.dot(curToTarget) / endTargetMag;
+        sinRotAng = (curToEnd.x * curToTarget.y - curToEnd.y * curToTarget.x) / endTargetMag;
+      }
+
+      var rotAng = Math.acos(clampVal(cosRotAng, 1, -1));
+      if (sinRotAng < 0) rotAng = -rotAng;
+      end.x = bones[boneId].p1.x + cosRotAng*curToEnd.x - sinRotAng*curToEnd.y;
+      end.y = bones[boneId].p1.y + sinRotAng*curToEnd.x + cosRotAng*curToEnd.y;
+      angles[boneId] += rotAng;
+    }
+
+    return angles;
+  }
+
+  tick() {
+    this.jacobianTranspose();
+    this.goToOrientation(this.CCD());
   }
 
 

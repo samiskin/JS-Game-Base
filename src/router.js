@@ -6,6 +6,7 @@ var Route = Router.Route;
 
 var routes = (
     <Route path={"/"} handler={App}>
+      <Route path={"JS-Game-Base/"} handler={App}/>
     </Route>
 );
 
